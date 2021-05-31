@@ -11,6 +11,12 @@ int main() {
     boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
     ctx.set_default_verify_paths();
 
-    std::make_shared<Connector>(ioc, ctx)->establish_connection(host, port, target, version);
+    auto ptr = std::make_unique<Connector>(ioc, ctx);
+
+    boost::asio::co_spawn(ioc, [host, port, target, version, &ptr] {
+        return ptr->establish_connection(std::move(host), std::move(port), std::move(target), std::move(version));
+    }, boost::asio::detached);
+    ioc.run();
+
     return 0;
 }
